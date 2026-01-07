@@ -1,0 +1,348 @@
+{
+    "name": "LinkedIn Content Generation",
+    "nodes": [
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "=Article :{{ $json.results[0].content }}\n\n",
+                "options": {
+                    "systemMessage": "=You are a YouTube content assistant. You will be given an article. Your task is to create a YouTube description in **exactly 5 lines**. "
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 2.2,
+            "position": [
+                352,
+                -96
+            ],
+            "id": "55eb47bd-a0e2-4512-ba7d-ca61d17e5ee5",
+            "name": "AI Agent"
+        },
+        {
+            "parameters": {
+                "model": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "gpt-4.1-mini"
+                },
+                "builtInTools": {},
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+            "typeVersion": 1.3,
+            "position": [
+                352,
+                64
+            ],
+            "id": "2c0a2e36-ad60-46fa-8aae-62b5f1460d50",
+            "name": "OpenAI Chat Model",
+            "credentials": {
+                "openAiApi": {
+                    "id": "",
+                    "name": ""
+                }
+            }
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.tavily.com/search",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": ""
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"query\": \"search the web for: {{ $json['YouTube Topic'] }}\",\n  \"auto_parameters\": false,\n  \"topic\": \"general\",\n  \"search_depth\": \"basic\",\n  \"chunks_per_source\": 3,\n  \"max_results\": 1,\n  \"time_range\": null,\n  \"start_date\": \"2025-02-09\",\n  \"end_date\": \"2025-12-29\",\n  \"include_answer\": false,\n  \"include_raw_content\": false,\n  \"include_images\": false,\n  \"include_image_descriptions\": false,\n  \"include_favicon\": false,\n  \"include_domains\": [],\n  \"exclude_domains\": [],\n  \"country\": null,\n  \"include_usage\": false\n}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                112,
+                -96
+            ],
+            "id": "36253691-79fd-4700-96da-a761a90caeee",
+            "name": "Tavily Research for description"
+        },
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {}
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.3,
+            "position": [
+                -416,
+                -96
+            ],
+            "id": "bb919b09-46b9-411c-9bc2-dad3ec36e4cb",
+            "name": "Schedule Trigger"
+        },
+        {
+            "parameters": {
+                "documentId": {
+                    "__rl": true,
+                    "value": "",
+                    "mode": "list",
+                    "cachedResultName": "",
+                    "cachedResultUrl": ""
+                },
+                "sheetName": {
+                    "__rl": true,
+                    "value": "",
+                    "mode": "list",
+                    "cachedResultName": "",
+                    "cachedResultUrl": ""
+                },
+                "filtersUI": {
+                    "values": [
+                        {
+                            "lookupColumn": "Status",
+                            "lookupValue": "To Do"
+                        }
+                    ]
+                },
+                "options": {
+                    "returnFirstMatch": true
+                }
+            },
+            "type": "n8n-nodes-base.googleSheets",
+            "typeVersion": 4.7,
+            "position": [
+                -144,
+                -96
+            ],
+            "id": "b86d1225-4b17-44af-ba26-6c132a88bb1e",
+            "name": "LinkedIn Post Ideas",
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "",
+                    "name": ""
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "update",
+                "documentId": {
+                    "__rl": true,
+                    "value": "",
+                    "mode": "list",
+                    "cachedResultName": "",
+                    "cachedResultUrl": ""
+                },
+                "sheetName": {
+                    "__rl": true,
+                    "value": "",
+                    "mode": "list",
+                    "cachedResultName": "",
+                    "cachedResultUrl": ""
+                },
+                "columns": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "YouTube Topic": "={{ $('LinkedIn Post Ideas').item.json['YouTube Topic'] }}",
+                        "Status": "done",
+                        "Content": "={{ $json.output }}"
+                    },
+                    "matchingColumns": [
+                        "YouTube Topic"
+                    ],
+                    "schema": [
+                        {
+                            "id": "YouTube Topic",
+                            "displayName": "YouTube Topic",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": true,
+                            "removed": false
+                        },
+                        {
+                            "id": "Status",
+                            "displayName": "Status",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": true
+                        },
+                        {
+                            "id": "Content",
+                            "displayName": "Content",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": true
+                        }
+                    ],
+                    "attemptToConvertTypes": false,
+                    "convertFieldsToString": false
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.googleSheets",
+            "typeVersion": 4.7,
+            "position": [
+                704,
+                -96
+            ],
+            "id": "13760bc5-fe8e-4fde-a9ba-385eb4bd4015",
+            "name": "Updating Sheet to add Content",
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "",
+                    "name": ""
+                }
+            }
+        },
+        {
+            "parameters": {
+                "content": "Triggers According to Schedule",
+                "height": 240
+            },
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+                -480,
+                -160
+            ],
+            "id": "bd76c570-7c26-478f-b0ec-5b752c73f8cf",
+            "name": "Sticky Note"
+        },
+        {
+            "parameters": {
+                "content": "Picks Up Post Idea From the Sheet",
+                "height": 240,
+                "color": 2
+            },
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+                -224,
+                -160
+            ],
+            "id": "98cf894c-32ce-4919-9fdb-c838f2e7149e",
+            "name": "Sticky Note1"
+        },
+        {
+            "parameters": {
+                "content": "Research Internet To keep Content Updated",
+                "height": 240,
+                "color": 3
+            },
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+                32,
+                -160
+            ],
+            "id": "aab8e830-bcfb-41a6-8af3-42be6590a3d1",
+            "name": "Sticky Note2"
+        },
+        {
+            "parameters": {
+                "content": "Agent Writes Content According to Internet Research",
+                "height": 352,
+                "width": 320,
+                "color": 4
+            },
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+                288,
+                -160
+            ],
+            "id": "08a7b14d-d113-4988-889f-12b42ef630b4",
+            "name": "Sticky Note3"
+        },
+        {
+            "parameters": {
+                "content": "Update Content In Your Sheet",
+                "height": 240,
+                "width": 256,
+                "color": 5
+            },
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+                624,
+                -160
+            ],
+            "id": "8be65b6e-abce-4aea-9453-8c5c18161a8c",
+            "name": "Sticky Note4"
+        }
+    ],
+    "connections": {
+        "AI Agent": {
+            "main": [
+                [
+                    {
+                        "node": "Updating Sheet to add Content",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenAI Chat Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Tavily Research for description": {
+            "main": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Schedule Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "LinkedIn Post Ideas",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "LinkedIn Post Ideas": {
+            "main": [
+                [
+                    {
+                        "node": "Tavily Research for description",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {
+        "executionOrder": "v1"
+    }
+}
